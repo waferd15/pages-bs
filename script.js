@@ -23,9 +23,7 @@ function getPrediction(sellPrice, weeklyAvg, buyVol, sellVol) {
 const container = document.getElementById("container");
 
 function loadData() {
-
   ITEMS.forEach(item => {
-
     const card = document.createElement("div");
     card.className = "card";
 
@@ -37,42 +35,39 @@ function loadData() {
 
     container.appendChild(card);
 
-  fetch(`https://cmc-bazaar-api.vercel.app/api/bazaar?item=${item.id}`, {
+    // ✅ FIXED FETCH (this was the bug area before)
+    fetch(`https://cmc-bazaar-api.vercel.app/api/bazaar?item=${item.id}`, {
       headers: {
-        "X-API-Key": API_KEY,
         "Accept": "application/json"
       }
     })
-    .then(res => res.json())
-    .then(data => {
+      .then(res => res.json())
+      .then(data => {
+        const sellPrice = data.sellTopEntries?.[0]?.price ?? 0;
+        const weeklyAvg = data.weeklyAveragePrice ?? 0;
+        const buyVol = data.buyVolume ?? 0;
+        const sellVol = data.sellVolume ?? 0;
 
-      const sellPrice = data.sellTopEntries?.[0]?.price ?? 0;
-      const weeklyAvg = data.weeklyAveragePrice ?? 0;
-      const buyVol = data.buyVolume ?? 0;
-      const sellVol = data.sellVolume ?? 0;
+        const prediction = getPrediction(sellPrice, weeklyAvg, buyVol, sellVol);
 
-      const prediction = getPrediction(sellPrice, weeklyAvg, buyVol, sellVol);
+        const priceEl = document.getElementById(`${item.id}-price`);
+        const predEl = document.getElementById(`${item.id}-pred`);
 
-      const priceEl = document.getElementById(`${item.id}-price`);
-      const predEl = document.getElementById(`${item.id}-pred`);
+        priceEl.innerText = `Sell: ${sellPrice} | Weekly Avg: ${weeklyAvg}`;
+        predEl.innerText = prediction;
 
-      priceEl.innerText = `Sell: ${sellPrice} | Weekly Avg: ${weeklyAvg}`;
-      predEl.innerText = prediction;
+        predEl.className = "prediction";
 
-      predEl.className = "prediction";
+        if (prediction.includes("rise")) predEl.classList.add("up");
+        else if (prediction.includes("dip")) predEl.classList.add("down");
+        else predEl.classList.add("stable");
+      })
+      .catch(err => {
+        console.error(item.id, err);
 
-      if (prediction.includes("up")) predEl.classList.add("up");
-      else if (prediction.includes("down")) predEl.classList.add("down");
-      else predEl.classList.add("stable");
-
-    })
-    .catch(err => {
-      console.error(item.id, err);
-
-      document.getElementById(`${item.id}-pred`).innerText =
-        "Error loading data";
-    });
-
+        const predEl = document.getElementById(`${item.id}-pred`);
+        if (predEl) predEl.innerText = "Error loading data";
+      });
   });
 }
 
