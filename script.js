@@ -1,74 +1,186 @@
 console.log("Hi :D");
 
-const API_KEY = "5fceb806-bc20-4fa1-807e-0570fad6062f";
+const API_URL = "https://cmc-bazaar-api.vercel.app/api/bazaar?item=";
 
-const ITEMS = [
-  { id: "enchanted_melon_block", name: "Enchanted Melon Block" },
-  { id: "enchanted_pumpkin_block", name: "Enchanted Pumpkin Block" },
-  { id: "polished_pumpkin", name: "Polished Pumpkin" }
-];
+/* ----------------
+   ITEM STRUCTURE
+-------------------*/
+const DATA = {
+  farming: {
+    label: "Farming",
+    sections: {
+      crops: {
+        label: "Crops",
+        bundles: {
+          Melon: ["melon_slice", "melon_block", "enchanted_melon", "enchanted_melon_block"],
+          Pumpkin: ["pumpkin", "enchanted_pumpkin", "enchanted_pumpkin_block", "polished_pumpkin"],
+          Carrot: ["carrot", "enchanted_carrot", "enchanted_golden_carrot"],
+          Potato: ["potato", "enchanted_potato"],
+          Wheat: ["wheat", "enchanted_wheat"],
+          SugarCane: ["sugar_cane", "enchanted_sugar_cane"],
+          Cactus: ["cactus", "enchanted_cactus"],
+        }
+      }
+    }
+  },
 
-function getPrediction(sellPrice, weeklyAvg, buyVol, sellVol) {
-  if (sellPrice < weeklyAvg && sellVol <= buyVol) {
-    return "Price might rise";
+  mining: {
+    label: "Mining",
+    sections: {
+      coal: {
+        label: "Coal",
+        bundles: {
+          Coal: ["coal", "enchanted_coal", "enchanted_coal_block"]
+        }
+      }
+    }
+  },
+
+  oddities: {
+    label: "Oddities",
+    sections: {
+      minion_upgrades: {
+        label: "Minion Upgrades",
+        bundles: {
+          Upgrades: [
+            "diamond_spreading",
+            "auto_smelter",
+            "super_compactor_3000",
+            "budget_hopper",
+            "enchanted_hopper",
+            "hamster_wheel"
+          ]
+        }
+      },
+
+      enchanting: {
+        label: "Enchanting",
+        bundles: {
+          XP: [
+            "experience_bottle",
+            "grand_experience_bottle",
+            "colossal_experience_bottle",
+            "titanic_experience_bottle"
+          ]
+        }
+      },
+
+      pet_candy: {
+        label: "Pet Candy",
+        bundles: {
+          Candy: [
+            "simple_beetroot_candy",
+            "great_beetroot_candy",
+            "superb_beetroot_candy",
+            "ultimate_beetroot_candy"
+          ]
+        }
+      }
+    }
   }
+};
 
-  if (sellVol > buyVol) {
-    return "Price might dip";
-  }
+/* ----------
+   UI STATE
+-------------*/
+const state = {
+  category: "farming",
+  section: "crops",
+  search: ""
+};
 
+const elBoard = document.getElementById("board");
+const elCat = document.getElementById("category-tabs");
+const elSub = document.getElementById("subcategory-tabs");
+const elSearch = document.getElementById("search");
+
+/* ---------------------------
+   NAME FORMATTER
+----------------------------*/
+function nice(id) {
+  return id
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/* ---------------------------
+   PREDICTION LOGIC
+----------------------------*/
+function predict(sell, avg, buyVol, sellVol) {
+  if (sell < avg && sellVol <= buyVol) return "Price might rise";
+  if (sellVol > buyVol) return "Price might dip";
   return "Stable";
 }
 
-const container = document.getElementById("container");
+/* ---------------------------
+   FETCH ITEM DATA
+----------------------------*/
+function loadItem(item, priceEl, predEl) {
+  fetch(API_URL + item)
+    .then(r => r.json())
+    .then(data => {
+      const sell = data.sellTopEntries?.[0]?.price ?? 0;
+      const avg = data.weeklyAveragePrice ?? 0;
+      const buy = data.buyVolume ?? 0;
+      const sellV = data.sellVolume ?? 0;
 
-function loadData() {
-  ITEMS.forEach(item => {
-    const card = document.createElement("div");
-    card.className = "card";
+      const p = predict(sell, avg, buy, sellV);
 
-    card.innerHTML = `
-      <div class="title">${item.name}</div>
-      <div class="price" id="${item.id}-price">Loading...</div>
-      <div class="prediction" id="${item.id}-pred">Loading...</div>
-    `;
+      priceEl.innerText = `Sell: ${sell} | Avg: ${avg}`;
+      predEl.innerText = p;
 
-    container.appendChild(card);
-
-    // ✅ FIXED FETCH (this was the bug area before)
-    fetch(`https://cmc-bazaar-api.vercel.app/api/bazaar?item=${item.id}`, {
-      headers: {
-        "Accept": "application/json"
-      }
+      predEl.className = "prediction " + (
+        p.includes("rise") ? "up" :
+        p.includes("dip") ? "down" : "stable"
+      );
     })
-      .then(res => res.json())
-      .then(data => {
-        const sellPrice = data.sellTopEntries?.[0]?.price ?? 0;
-        const weeklyAvg = data.weeklyAveragePrice ?? 0;
-        const buyVol = data.buyVolume ?? 0;
-        const sellVol = data.sellVolume ?? 0;
+    .catch(() => {
+      predEl.innerText = "Error loading";
+    });
+}
 
-        const prediction = getPrediction(sellPrice, weeklyAvg, buyVol, sellVol);
+/* -------
+   RENDER
+----------*/
+function render() {
+  const section = DATA[state.category].sections[state.section];
 
-        const priceEl = document.getElementById(`${item.id}-price`);
-        const predEl = document.getElementById(`${item.id}-pred`);
+  elBoard.innerHTML = "";
 
-        priceEl.innerText = `Sell: ${sellPrice} | Weekly Avg: ${weeklyAvg}`;
-        predEl.innerText = prediction;
+  Object.entries(section.bundles).forEach(([bundleName, items]) => {
 
-        predEl.className = "prediction";
+    const group = document.createElement("details");
+    group.className = "group";
+    group.open = true;
 
-        if (prediction.includes("rise")) predEl.classList.add("up");
-        else if (prediction.includes("dip")) predEl.classList.add("down");
-        else predEl.classList.add("stable");
-      })
-      .catch(err => {
-        console.error(item.id, err);
+    const summary = document.createElement("summary");
+    summary.innerText = bundleName;
 
-        const predEl = document.getElementById(`${item.id}-pred`);
-        if (predEl) predEl.innerText = "Error loading data";
-      });
+    const inner = document.createElement("div");
+    inner.className = "inner";
+
+    items.forEach(id => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <div class="title">${nice(id)}</div>
+        <div class="price" id="${id}-price">Loading...</div>
+        <div class="prediction" id="${id}-pred">Loading...</div>
+      `;
+
+      inner.appendChild(card);
+
+      const priceEl = card.querySelector(`#${id}-price`);
+      const predEl = card.querySelector(`#${id}-pred`);
+
+      loadItem(id, priceEl, predEl);
+    });
+
+    group.appendChild(summary);
+    group.appendChild(inner);
+    elBoard.appendChild(group);
   });
 }
 
-loadData();
+render();
