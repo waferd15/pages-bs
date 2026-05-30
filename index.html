@@ -1,70 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Bazaar Tracker</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CMC Bazaar Tracker</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f1115;
-      color: white;
-    }
-
-    h1 {
-      text-align: center;
-      padding: 20px;
-      margin: 0;
-    }
-
-    #container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-      padding: 20px;
-    }
-
-    .card {
-      background: #1a1d24;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      transition: transform 0.2s ease;
-    }
-
-    .card:hover {
-      transform: translateY(-3px);
-    }
-
-    .title {
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-
-    .price {
-      color: #b0b0b0;
-      font-size: 14px;
-    }
-
-    .prediction {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-
-    .up { color: #4ade80; }
-    .down { color: #f87171; }
-    .stable { color: #facc15; }
-
-  </style>
+  <link rel="stylesheet" href="style.css"/>
 </head>
-
 <body>
 
-  <h1>Bazaar Tracker</h1>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>CMC Bazaar Tracker</h1>
+        <div class="subtitle">Compact grouped dashboard</div>
+      </div>
 
-  <div id="container"></div>
+      <div class="topbar">
+        <input id="search" class="search" placeholder="Search items..." />
+        <div class="pill" id="status-pill">Loading...</div>
+      </div>
+    </header>
+
+    <nav class="tabs" id="category-tabs"></nav>
+    <nav class="subtabs" id="subcategory-tabs"></nav>
+
+    <div class="section-title">
+      <h2 id="view-title">Loading...</h2>
+      <div class="hint">Click a group to expand it</div>
+    </div>
+
+    <div class="board" id="board"></div>
+  </div>
 
   <script src="script.js"></script>
-
 </body>
 </html>
